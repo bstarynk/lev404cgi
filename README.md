@@ -14,8 +14,6 @@ command is near the end of the file.
 Copyright 2013 Basile Starynkevitch
 
 
-  GPLv3 license
-  =====
 
 ##### GPLv3 license notice:
 This program is free software: you can redistribute it and/or modify
@@ -30,6 +28,13 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+
+#### installation instructions:
+
+The last dozen lines of the lev404.cc file gives compilation
+instructions (e.g. for GNU/Linux/Debian); you should get a lev404.cgi file.
 
 Then configure your web server to run that CGI for 404 Not-found errors. 
 With Lighttpd, put lines like the following into your lighttpd.conf
