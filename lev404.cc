@@ -221,6 +221,7 @@ main(int /*argc*/,
   string reqdir = reqpath.substr(0, reqpath.find ('/'));
   /// look into the request topmost directory
   scan_directory(reqdir, reqpath, pathvec);
+  cout << "<!-- reqdir=" << reqdir << " nbdirpaths=" << pathvec.size() << "; reqpath=" << reqpath << " -->" << endl;
   /// look into the current, i.e. webdocumentroot, directory
   scan_directory(".", reqpath, pathvec);
   sort(pathvec.begin(), pathvec.end());
@@ -240,7 +241,12 @@ main(int /*argc*/,
     cout << "</ul></p>" << endl;
   }
   cout << "<hr/>" << endl;
-  cout << "<small>Generated with <a href='https://github.com/bstarynk/lev404cgi'>lev404cgi</a></small>" << endl;
+  cout << "<p><small>Generated with <a href='https://github.com/bstarynk/lev404cgi'>lev404cgi</a>" << endl;
+#ifdef GIT_COMMIT
+#define STRINGIFY(X) #X
+  cout << " git-commit <tt>" STRINGIFY(GIT_COMMIT) "</tt>";
+#endif /*GIT_COMMIT*/
+  cout << ".</small></p>" << endl;
   cout << "</body></html>" << endl;
   return EXIT_SUCCESS;
 }
@@ -249,7 +255,7 @@ main(int /*argc*/,
 
 /**** for emacs
   ++ Local Variables: ++
-  ++ compile-command: "g++ -O -Wall -g lev404.cc /usr/lib/libcgicc.a  -lm -o lev404.cgi" ++
+  ++ compile-command: "g++ -O -Wall -g -DGIT_COMMIT=`git log -n 1 --abbrev=16 --format=%h` lev404.cc /usr/lib/libcgicc.a  -lm -o lev404.cgi" ++
   ++ End: ++
 
   To install, configure your web server appropriately
