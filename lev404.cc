@@ -235,6 +235,23 @@ main(int /*argc*/,
   if (!pathvec.empty()) {
     cout << "<p>Possible suggestions (with similarity score): <ul>" << endl;
     int cnt = 0;
+#ifndef NDEBUG
+    {
+#define LEVL404DBG "/tmp/levl404dbg"
+      FILE *pfil = fopen(LEVL404DBG, "w");
+      if (pfil) {
+	syslog (LOG_NOTICE, "reqpath=%s debug output in %s", reqpath.c_str(), LEVL404DBG);
+	fprintf(pfil, "**nowbuf %s; pwdbuf %s; reqdir %s\n", nowbuf, pwdbuf, reqdir.c_str());
+	fprintf(pfil, "**reqpath is %s\n", reqpath.c_str());
+	for (Pathvec_t::iterator it= pathvec.begin(); it != pathvec.end(); it++)
+	  {
+	    fprintf(pfil, "name=%s score=%g\n", it->name.c_str(), it->score);
+	  }
+	fclose(pfil);
+      }
+    }
+#warning with debug output to /tmp/levl404dbg
+#endif /*NDEBUG*/
     for (Pathvec_t::iterator it= pathvec.begin(); it != pathvec.end(); it++)
       {
 	cnt++;
