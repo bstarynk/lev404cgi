@@ -103,6 +103,8 @@ bool operator < (const Path& p1, const Path& p2)
 
 typedef vector<Path> Pathvec_t;
 
+#define LEV404_LOG_FILE "/var/log/lev404cgi.log"
+
 // Main Street, USA
 int
 main(int /*argc*/, 
@@ -122,8 +124,24 @@ main(int /*argc*/,
   const CgiEnvironment& env = cgi.getEnvironment();
   string reqpath = getenv("REQUEST_URI")?:env.getPathInfo();
   // log this run, in addition of what the web server might do
-  syslog (LOG_NOTICE, "reqpath=%s method=%s at gmtime=%s",
-	  reqpath.c_str(), env.getRequestMethod().c_str(), nowbuf);
+  syslog (LOG_NOTICE, "reqpath=%s method=%s at gmtime=%s remote=%s",
+	  reqpath.c_str(), env.getRequestMethod().c_str(), nowbuf, 
+	  env.getRemoteHost().c_str());
+  { 
+    FILE *flog = fopen(LEV404_LOG_FILE, "a");
+    if (flog != NULL) {
+      if (ftell(flog)==0) {
+	fprintf(flog, "## file " LEV404_LOG_FILE "; from "
+		"https://github.com/bstarynk/lev404cgi\n");
+	fprintf(flog, "##<time> <reqpath> <reqmethod> <remotehost>\n");
+      }
+      fprintf(flog, "%s\t%s\t%s\t%s\n",
+	      nowbuf, reqpath.c_str(), env.getRequestMethod().c_str(), 
+	      env.getRemoteHost().c_str());
+      fclose (flog);
+    }
+    else syslog (LOG_WARNING, "could not open %s - %m", LEV404_LOG_FILE);
+  }
   cout << "Status: 404 Not Found" << "\r\n";
   cout << "Content-Type: text/html" << "\r\n";
   cout << "\r\n" << endl;

@@ -11,7 +11,7 @@ files on the web sever.
 The program is a self-contained C++ file lev404.cc, whose compilation
 command is near the end of the file.
 
-Copyright 2013 Basile Starynkevitch
+Copyright 2013 - 2015 Basile Starynkevitch
 
 
 
@@ -39,10 +39,11 @@ instructions (e.g. for GNU/Linux/Debian); you should get a lev404.cgi file.
 Then configure your web server to run that CGI for 404 Not-found errors. 
 With Lighttpd, put lines like the following into your lighttpd.conf
 
-$HTTP["host"] == "gcc-melt.org" {
-   server.document-root = "/var/www/gcc-melt.org/"
-   server.error-handler-404   = "/lev404.cgi"
-   cgi.assign = ( ".cgi" => "" )
-}
+    $HTTP["host"] == "gcc-melt.org" {
+      server.document-root = "/var/www/gcc-melt.org/"
+      server.error-handler-404   = "/lev404.cgi"
+      cgi.assign = ( ".cgi" => "" )
+    }
 
-(the http://gcc-melt.org/ site is using this)
+
+(the http://gcc-melt.org/ site should use this)
