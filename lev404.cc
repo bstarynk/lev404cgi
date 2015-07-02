@@ -47,6 +47,12 @@ http://en.wikipedia.org/wiki/Damerau%E2%80%93Levenshtein_distance
 #include "cgicc/HTTPStatusHeader.h"
 #include "cgicc/HTTPHTMLHeader.h"
 
+#ifdef GIT_COMMIT
+#define STRINGIFY2(X) #X
+#define STRINGIFY(X) STRINGIFY2(X)
+#define GIT_COMMIT_STRING STRINGIFY(GIT_COMMIT)
+#endif /*GIT_COMMIT*/
+
 using namespace std;
 using namespace cgicc;
 
@@ -87,7 +93,9 @@ double edit_distance( const std::string& s1, const std::string& s2 )
   double tmp = p[n2];
   delete[] p;
   delete[] q;
-
+  // we favor compare of strings starting with the same four characters
+  if (s1.size() > 10 && s2.size() > 10 && s1[0] == s2[0] && s1[1] == s2[1] && s1[2] == s2[2] && s1[3] == s2[3])
+    tmp = tmp * 0.75;
   return tmp;
 }
 
@@ -127,13 +135,20 @@ void scan_directory(const std::string& dirstr, const std::string& reqpath, Pathv
 	  continue;
 	{
 	  Path p;
-	  p.name = ent->d_name;
-	  p.score = edit_distance(dirstr + "/" + p.name, reqpath);
-	  if (dirstr == (".") || dirstr == ("./") || dirstr.empty())
+	  
+	  if (dirstr == "." || dirstr == "./" || dirstr.empty())
 	    {
-	      double s = edit_distance(p.name, reqpath);
-	      if (p.score > s) 
-		p.score = s;
+	      double s = edit_distance(ent->d_name, reqpath);
+	      p.score = s;
+	      p.name = ent->d_name;
+	    }
+	  else
+	    {
+	      string fnam = dirstr;
+	      if (dirstr[dirstr.size()-1] != '/') fnam += "/";
+	      fnam += ent->d_name;
+	      p.score = edit_distance(fnam, reqpath);
+	      p.name = fnam;
 	    }
 	  pathvec.push_back (p);
 	}
@@ -170,20 +185,32 @@ main(int /*argc*/,
   string reqpath = getenv("REQUEST_URI")?:env.getPathInfo();
   string origreqpath = reqpath;
   // log this run, in addition of what the web server might do
-  syslog (LOG_NOTICE, "reqpath=%s method=%s at gmtime=%s remotehost=%s remoteip=%s",
+  syslog (LOG_NOTICE, "reqpath=%s method=%s at gmtime=%s remotehost=%s remoteip=%s %s",
 	  reqpath.c_str(), env.getRequestMethod().c_str(), nowbuf, 
-	  env.getRemoteHost().c_str(), env.getRemoteAddr().c_str());
+	  env.getRemoteHost().c_str(), env.getRemoteAddr().c_str(),
+#ifdef GIT_COMMIT
+	  "gitcomm=" GIT_COMMIT_STRING
+#else
+	  __DATE__ "@" __TIME__
+#endif
+	  );
   { 
     FILE *flog = fopen(LEV404_LOG_FILE, "a");
     if (flog != NULL) {
       if (ftell(flog)==0) {
 	fprintf(flog, "## log file %s; from "
 		"https://github.com/bstarynk/lev404cgi\n", LEV404_LOG_FILE);
-	fprintf(flog, "##<time> <reqpath> <reqmethod> <remotehost> <remoteaddr>\n");
+	fprintf(flog, "##<time> <reqpath> <reqmethod> <remotehost> <remoteaddr> (<gitcommit>)\n");
       }
-      fprintf(flog, "%s\t%s\t%s\t%s\t%s\n",
+      fprintf(flog, "%s\t%s\t%s\t%s\t%s",
 	      nowbuf, reqpath.c_str(), env.getRequestMethod().c_str(), 
 	      env.getRemoteHost().c_str(), env.getRemoteAddr().c_str());
+#ifdef GIT_COMMIT
+      fprintf(flog, "\t(%s)", GIT_COMMIT_STRING);
+#else
+      fprintf(flog, "\t[%s]",  __DATE__ "@" __TIME__);
+#endif 
+      fputc('\n', flog);
       fclose (flog);
     }
     else 
@@ -266,10 +293,8 @@ main(int /*argc*/,
   cout << "<hr/>" << endl;
   cout << "<p><small>Generated with <a href='https://github.com/bstarynk/lev404cgi'>lev404cgi</a>" << endl;
 #ifdef GIT_COMMIT
-#define STRINGIFY2(X) #X
-#define STRINGIFY(X) STRINGIFY2(X)
   //#pragma message "git-commit:" STRINGIFY(GIT_COMMIT)
-  cout << " git-commit <tt>" STRINGIFY(GIT_COMMIT) "</tt>";
+  cout << " git-commit <tt>" GIT_COMMIT_STRING "</tt>";
 #endif /*GIT_COMMIT*/
   cout << ".</small></p>" << endl;
   cout << "</body></html>" << endl;
