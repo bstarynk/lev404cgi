@@ -36,6 +36,7 @@ http://en.wikipedia.org/wiki/Damerau%E2%80%93Levenshtein_distance
 #include <cstring>
 #include <syslog.h>
 #include <time.h>
+#include <unistd.h>
 #include <sys/time.h>
 #include <dirent.h>
 #include <ctype.h>
@@ -119,28 +120,34 @@ main(int /*argc*/,
   strftime(nowbuf, sizeof(nowbuf)-1, 
 	   "%Y-%b-%d %H:%M:%S %Z",
 	   gmtime(&now));
+  char pwdbuf[256];
+  memset (pwdbuf, 0, sizeof(pwdbuf));
+  if (!getcwd(pwdbuf, sizeof(pwdbuf)-1))
+    syslog (LOG_WARNING, "getcwd failed - %m");
+  pwdbuf[sizeof(pwdbuf)-1] = '\0';
   // Create a new Cgicc object containing all the CGI data
   Cgicc cgi;
   const CgiEnvironment& env = cgi.getEnvironment();
   string reqpath = getenv("REQUEST_URI")?:env.getPathInfo();
   // log this run, in addition of what the web server might do
-  syslog (LOG_NOTICE, "reqpath=%s method=%s at gmtime=%s remote=%s",
+  syslog (LOG_NOTICE, "reqpath=%s method=%s at gmtime=%s remotehost=%s remoteip=%s",
 	  reqpath.c_str(), env.getRequestMethod().c_str(), nowbuf, 
-	  env.getRemoteHost().c_str());
+	  env.getRemoteHost().c_str(), env.getRemoteAddr().c_str());
   { 
     FILE *flog = fopen(LEV404_LOG_FILE, "a");
     if (flog != NULL) {
       if (ftell(flog)==0) {
-	fprintf(flog, "## file " LEV404_LOG_FILE "; from "
-		"https://github.com/bstarynk/lev404cgi\n");
-	fprintf(flog, "##<time> <reqpath> <reqmethod> <remotehost>\n");
+	fprintf(flog, "## log file %s; from "
+		"https://github.com/bstarynk/lev404cgi\n", LEV404_LOG_FILE);
+	fprintf(flog, "##<time> <reqpath> <reqmethod> <remotehost> <remoteaddr>\n");
       }
-      fprintf(flog, "%s\t%s\t%s\t%s\n",
+      fprintf(flog, "%s\t%s\t%s\t%s\t%s\n",
 	      nowbuf, reqpath.c_str(), env.getRequestMethod().c_str(), 
-	      env.getRemoteHost().c_str());
+	      env.getRemoteHost().c_str(), env.getRemoteAddr().c_str());
       fclose (flog);
     }
-    else syslog (LOG_WARNING, "could not open %s - %m", LEV404_LOG_FILE);
+    else 
+      syslog (LOG_WARNING, "could not open %s - %m", LEV404_LOG_FILE);
   }
   cout << "Status: 404 Not Found" << "\r\n";
   cout << "Content-Type: text/html" << "\r\n";
@@ -169,6 +176,7 @@ main(int /*argc*/,
   for (char**e = environ; e && *e; e++)
     cout << " " << *e << endl;
   cout << " -->" << endl;
+  cout << "<!-- Unix cwd: " << pwdbuf << " -->" << endl;
   cout << "<body><h1>404 - Not found</h1>" << endl;
   cout << "<p><tt>" << env.getRequestMethod() << "</tt> of path <tt>" <<
     reqpath << "</tt> at " << nowbuf << ".</p>" << endl;
