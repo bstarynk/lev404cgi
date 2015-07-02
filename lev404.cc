@@ -128,7 +128,13 @@ void scan_directory(const std::string& dirstr, const std::string& reqpath, Pathv
 	{
 	  Path p;
 	  p.name = ent->d_name;
-	  p.score = edit_distance(p.name, reqpath);
+	  p.score = edit_distance(dirstr + "/" + p.name, reqpath);
+	  if (dirstr == (".") || dirstr == ("./") || dirstr.empty())
+	    {
+	      double s = edit_distance(p.name, reqpath);
+	      if (p.score > s) 
+		p.score = s;
+	    }
 	  pathvec.push_back (p);
 	}
       }
@@ -243,7 +249,9 @@ main(int /*argc*/,
   cout << "<hr/>" << endl;
   cout << "<p><small>Generated with <a href='https://github.com/bstarynk/lev404cgi'>lev404cgi</a>" << endl;
 #ifdef GIT_COMMIT
-#define STRINGIFY(X) #X
+#define STRINGIFY2(X) #X
+#define STRINGIFY(X) STRINGIFY2(X)
+  //#pragma message "git-commit:" STRINGIFY(GIT_COMMIT)
   cout << " git-commit <tt>" STRINGIFY(GIT_COMMIT) "</tt>";
 #endif /*GIT_COMMIT*/
   cout << ".</small></p>" << endl;
