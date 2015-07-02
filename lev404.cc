@@ -106,6 +106,39 @@ typedef vector<Path> Pathvec_t;
 
 #define LEV404_LOG_FILE "/var/log/lev404cgi.log"
 
+void scan_directory(const std::string& dirstr, const std::string& reqpath, Pathvec_t& pathvec)
+{
+  struct dirent * ent = NULL;
+  DIR* cdir = NULL;
+  cdir = opendir(dirstr.c_str());
+  if (cdir) {
+    for (ent = readdir(cdir); ent != NULL; ent = readdir(cdir))
+      {
+	// skip hidden files, notably . & ..
+	if (ent->d_name[0] == '.') 
+	  continue;
+	// skip short files, or backup files ending with % or ~ or CGI files
+	int entlen = strlen(ent->d_name);
+	if (entlen <= 5
+	    || !isalnum(ent->d_name[0]) 
+	    || !isalnum(ent->d_name[entlen-1])
+	    || !strcmp(ent->d_name + entlen-3, "cgi")
+	    )
+	  continue;
+	{
+	  Path p;
+	  p.name = ent->d_name;
+	  p.score = edit_distance(p.name, reqpath);
+	  pathvec.push_back (p);
+	}
+      }
+    closedir(cdir);
+  }
+  else
+    syslog(LOG_NOTICE, "failed to scan directory %s - %m", dirstr.c_str());
+} // end of scan_directory
+
+
 // Main Street, USA
 int
 main(int /*argc*/, 
@@ -129,6 +162,7 @@ main(int /*argc*/,
   Cgicc cgi;
   const CgiEnvironment& env = cgi.getEnvironment();
   string reqpath = getenv("REQUEST_URI")?:env.getPathInfo();
+  string origreqpath = reqpath;
   // log this run, in addition of what the web server might do
   syslog (LOG_NOTICE, "reqpath=%s method=%s at gmtime=%s remotehost=%s remoteip=%s",
 	  reqpath.c_str(), env.getRequestMethod().c_str(), nowbuf, 
@@ -177,41 +211,19 @@ main(int /*argc*/,
     cout << " " << *e << endl;
   cout << " -->" << endl;
   cout << "<!-- Unix cwd: " << pwdbuf << " -->" << endl;
+  cout << "<!-- HTTP reqpath: " << reqpath << " -->" << endl;
   cout << "<body><h1>404 - Not found</h1>" << endl;
   cout << "<p><tt>" << env.getRequestMethod() << "</tt> of path <tt>" <<
-    reqpath << "</tt> at " << nowbuf << ".</p>" << endl;
-  
+    reqpath << "</tt> at " << nowbuf << ".</p>" << endl;  
   if (!reqpath.empty() && reqpath[0] == '/') 
     reqpath.erase(0,1);
   Pathvec_t pathvec;
-  struct dirent * ent = NULL;
-  DIR* cdir = opendir(".");
-  if (cdir) {
-    for (ent = readdir(cdir); ent != NULL; ent = readdir(cdir))
-      {
-	// skip hidden files, notably . & ..
-	if (ent->d_name[0] == '.') 
-	  continue;
-	// skip short files, or backup files ending with % or ~ or CGI files
-	int entlen = strlen(ent->d_name);
-	if (entlen <= 4
-	    || !isalnum(ent->d_name[0]) 
-	    || !isalnum(ent->d_name[entlen-1])
-	    || !strcmp(ent->d_name + entlen-3, "cgi")
-	    )
-	  continue;
-	{
-	  Path p;
-	  p.name = ent->d_name;
-	  p.score = edit_distance(p.name, reqpath);
-	  pathvec.push_back (p);
-	}
-      }
-    closedir(cdir);
-  }
-
+  string reqdir = reqpath.substr(0, reqpath.find ('/'));
+  /// look into the request topmost directory
+  scan_directory(reqdir, reqpath, pathvec);
+  /// look into the current, i.e. webdocumentroot, directory
+  scan_directory(".", reqpath, pathvec);
   sort(pathvec.begin(), pathvec.end());
-
   cout << "<!-- #paths: " << pathvec.size() << " -->" << endl;
   if (!pathvec.empty()) {
     cout << "<p>Possible suggestions (with similarity score): <ul>" << endl;
@@ -227,7 +239,6 @@ main(int /*argc*/,
       cout << " etc ....";
     cout << "</ul></p>" << endl;
   }
-
   cout << "<hr/>" << endl;
   cout << "<small>Generated with <a href='https://github.com/bstarynk/lev404cgi'>lev404cgi</a></small>" << endl;
   cout << "</body></html>" << endl;
