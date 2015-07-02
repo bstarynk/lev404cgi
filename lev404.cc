@@ -95,7 +95,7 @@ double edit_distance( const std::string& s1, const std::string& s2 )
   delete[] q;
   // we favor compare of strings starting with the same four characters
   if (s1.size() > 10 && s2.size() > 10 && s1[0] == s2[0] && s1[1] == s2[1] && s1[2] == s2[2] && s1[3] == s2[3])
-    tmp = tmp * 0.75;
+    tmp = tmp * 0.7;
   return tmp;
 }
 
@@ -260,7 +260,7 @@ main(int /*argc*/,
   sort(pathvec.begin(), pathvec.end());
   cout << "<!-- #paths: " << pathvec.size() << " -->" << endl;
   if (!pathvec.empty()) {
-    cout << "<p>Possible suggestions (with similarity score): <ul>" << endl;
+    cout << "<p>Possible suggestions (with similarity distance): <ul>" << endl;
     int cnt = 0;
 #ifndef NDEBUG
     {
