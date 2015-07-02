@@ -6,7 +6,7 @@
     and presenting to the browser some near-miss URLs.
 
     ****
-    Copyright (C) 2013 Basile Starynkevitch
+    Copyright (C) 2013 - 2015 Basile Starynkevitch
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -121,6 +121,9 @@ main(int /*argc*/,
   Cgicc cgi;
   const CgiEnvironment& env = cgi.getEnvironment();
   string reqpath = getenv("REQUEST_URI")?:env.getPathInfo();
+  // log this run, in addition of what the web server might do
+  syslog (LOG_NOTICE, "reqpath=%s method=%s at gmtime=%s",
+	  reqpath.c_str(), env.getRequestMethod().c_str(), nowbuf);
   cout << "Status: 404 Not Found" << "\r\n";
   cout << "Content-Type: text/html" << "\r\n";
   cout << "\r\n" << endl;
