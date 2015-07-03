@@ -200,10 +200,10 @@ main(int /*argc*/,
       if (ftell(flog)==0) {
 	fprintf(flog, "## log file %s; from "
 		"https://github.com/bstarynk/lev404cgi\n", LEV404_LOG_FILE);
-	fprintf(flog, "##<time> <reqpath> <reqmethod> <remotehost> <remoteaddr> (<gitcommit>)\n");
+	fprintf(flog, "##<time> <servername> <reqpath> <reqmethod> <remotehost> <remoteaddr> (<gitcommit>)\n");
       }
-      fprintf(flog, "%s\t%s\t%s\t%s\t%s",
-	      nowbuf, reqpath.c_str(), env.getRequestMethod().c_str(), 
+      fprintf(flog, "%s\t%s\t%s\t%s\t%s\t%s",
+	      nowbuf, env.getServerName().c_str(), reqpath.c_str(), env.getRequestMethod().c_str(), 
 	      env.getRemoteHost().c_str(), env.getRemoteAddr().c_str());
 #ifdef GIT_COMMIT
       fprintf(flog, "\t(%s)", GIT_COMMIT_STRING);
@@ -247,7 +247,7 @@ main(int /*argc*/,
   cout << "<!-- HTTP reqpath: " << reqpath << " -->" << endl;
   cout << "<body><h1>404 - Not found</h1>" << endl;
   cout << "<p><tt>" << env.getRequestMethod() << "</tt> of path <tt>" <<
-    reqpath << "</tt> at " << nowbuf << ".</p>" << endl;  
+    reqpath << "</tt> from <i>" << env.getServerName() << "</i> at " << nowbuf << ".</p>" << endl;  
   if (!reqpath.empty() && reqpath[0] == '/') 
     reqpath.erase(0,1);
   Pathvec_t pathvec;
