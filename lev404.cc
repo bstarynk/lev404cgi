@@ -283,7 +283,7 @@ main(int /*argc*/,
       {
 	cnt++;
 	if (cnt>12) break;
-	cout << "<li><a href='" << it->name << "'>" << it->name << "</a>"
+	cout << "<li><a href='/" << it->name << "'>" << it->name << "</a>"
 	     << " <small>(" << it->score << ")</small></li>" << endl;
       }
     if (cnt < (int)pathvec.size()) 
